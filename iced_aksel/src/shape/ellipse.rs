@@ -32,14 +32,16 @@ use iced_core::{Color, Point};
 /// ## 2. Stretched Ellipse
 /// ```rust
 /// use iced_aksel::shape::Ellipse;
-/// use iced_aksel::{Stroke, Measure};
+/// use iced_aksel::{Stroke, Measure, Radii};
 /// use iced::Color;
 /// use aksel::PlotPoint;
 ///
 /// let oval = Ellipse::new(
 ///     PlotPoint::new(0.0, 0.0),
-///     Measure::Screen(20.0), // Radius X
-///     Measure::Screen(10.0)  // Radius Y
+///     Radii::new(
+///         Measure::Screen(20.0), // Radius X
+///         Measure::Screen(10.0)  // Radius Y
+///     )
 /// )
 /// .stroke(Stroke::new(Color::BLACK, Measure::Screen(2.0)));
 /// ```

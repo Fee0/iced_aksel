@@ -16,11 +16,12 @@
 //! # Example
 //!
 //! ```rust
-//! use iced_aksel::{PlotPoint, Measure, shape::{Ellipse, Line, Rectangle}, Stroke};
+//! use iced_aksel::{PlotPoint, Measure, Radii, Stroke};
+//! use iced_aksel::shape::{Ellipse, Line, Rectangle};
 //! use iced::Color;
 //!
 //! // Circle at (10, 20) with radius 5 pixels
-//! let circle = Ellipse::new(PlotPoint::new(10.0, 20.0), Measure::Screen(5.0), Measure::Screen(5.0))
+//! let circle = Ellipse::new(PlotPoint::new(10.0, 20.0), Radii::uniform(Measure::Screen(5.0)))
 //!     .fill(Color::from_rgb(1.0, 0.0, 0.0));
 //!
 //! // Line from (0, 0) to (10, 10)

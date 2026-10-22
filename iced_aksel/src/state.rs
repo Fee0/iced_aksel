@@ -154,7 +154,7 @@ where
     ///
     /// Panics if the axis doesn't exist.
     pub fn axis(&self, id: &AxisId) -> &Axis<D, Theme> {
-        self.axes.get(id).unwrap()
+        self.axes.get(id).expect("axis does not exist")
     }
 
     /// Returns a mutable reference to an axis by ID.
@@ -180,7 +180,7 @@ where
     /// Panics if the axis doesn't exist.
     pub fn axis_mut(&mut self, id: &AxisId) -> &mut Axis<D, Theme> {
         self.increment_version();
-        self.axes.get_mut(id).unwrap()
+        self.axes.get_mut(id).expect("axis does not exist")
     }
 
     /// Returns an iterator over all axes mutably.

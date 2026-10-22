@@ -10,7 +10,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```rust
-/// use iced_aksel::interaction::area::HitTest;
+/// use iced_aksel::interaction::HitTest;
 /// use iced_core::Rectangle;
 ///
 /// #[derive(Debug)]
