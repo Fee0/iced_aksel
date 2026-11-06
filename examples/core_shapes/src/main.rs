@@ -1,5 +1,6 @@
 //! Showcase of the core shapes available in iced_aksel.
 use iced::Degrees;
+use iced::Widget as _;
 use iced::alignment::{Horizontal, Vertical};
 use iced::widget::text::Wrapping;
 use iced::{
@@ -75,7 +76,7 @@ impl GridTestApp {
         column![container(chart).width(Length::Fill).height(Length::Fill)]
             .width(Length::Fill)
             .height(Length::Fill)
-            .into()
+            .boxed()
     }
 }
 

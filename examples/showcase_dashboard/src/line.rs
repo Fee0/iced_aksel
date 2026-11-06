@@ -621,7 +621,7 @@ impl PlotData<f64, crate::Message> for LineChart {
         }
 
         if self.show_legend {
-            let palette = theme.palette();
+            let palette = theme.seed();
             if let (Some(x_axis), Some(y_axis)) = (
                 self.state.axis_opt(&Self::X.to_string()),
                 self.state.axis_opt(&Self::Y.to_string()),

@@ -7,7 +7,8 @@
 //!
 
 use iced::{
-    Alignment, Border, Color, Element, Length, Padding, Subscription, Task, Theme, font, keyboard,
+    Alignment, Border, Color, Element, Length, Padding, Subscription, Task, Theme, Widget, font,
+    keyboard,
     time::Instant,
     widget::{Space, button, column, container, pick_list, row, text},
 };
@@ -200,17 +201,18 @@ impl ExampleApp {
             .width(Length::Fill)
             .height(Length::FillPortion(1));
 
-        let theme_picker =
-            pick_list(Theme::ALL, Some(&self.theme), Message::SwitchTheme).width(Length::Fill);
+        let theme_picker = pick_list(Some(&self.theme), Theme::ALL, Theme::to_string)
+            .on_select(Message::SwitchTheme)
+            .width(Length::Fill);
 
         let help_text = text("Tip: Use Left/Right Arrow keys to cycle themes")
             .size(12)
-            .color(self.theme.palette().text.scale_alpha(0.5));
+            .color(self.theme.seed().text.scale_alpha(0.5));
 
         column![theme_picker, help_text, top_row, bottom_row]
             .spacing(20)
             .padding(20)
-            .into()
+            .boxed()
     }
 
     fn run() -> iced::Result {
@@ -247,21 +249,21 @@ impl ExampleApp {
 
 fn widget_card<'a>(
     title: &'a str,
-    content: impl Into<Element<'a, Message>>,
-    actions: impl Into<Element<'a, Message>>,
+    content: impl Widget<Message> + 'a,
+    actions: impl Widget<Message> + 'a,
     theme: &Theme,
-) -> container::Container<'a, Message> {
+) -> container::Container<'a, Element<'a, Message>> {
     // Fix: Space::new(Length::Fill, Length::Shrink) acts as a horizontal spacer
     let spacer = Space::new().width(Length::Fill).height(Length::Shrink);
 
     // Fix: Use .color() directly on text, not inside .style() closure
     let header = row![
         text(title)
-            .font(font::Font::with_name("Inter"))
+            .font(font::Font::new("Inter"))
             .size(14)
-            .color(theme.palette().text.scale_alpha(0.7)),
+            .color(theme.seed().text.scale_alpha(0.7)),
         spacer,
-        actions.into()
+        actions
     ]
     .align_y(Alignment::Center)
     .padding(Padding::new(0.0).bottom(10.0));
@@ -272,10 +274,10 @@ fn widget_card<'a>(
 }
 
 fn glassy_container<'a>(
-    content: impl Into<Element<'a, Message>>,
-) -> container::Container<'a, Message> {
-    container(content).padding(15).style(|t| {
-        let palette = t.palette();
+    content: impl Widget<Message> + 'a,
+) -> container::Container<'a, Element<'a, Message>> {
+    container(content.boxed()).padding(15).style(|t: &Theme| {
+        let palette = t.seed();
 
         let mut bg = palette.text;
         bg.a = 0.03;
@@ -292,7 +294,7 @@ fn glassy_container<'a>(
 }
 
 // Fix: explicit lifetime 'a added to `label`
-fn action_button<'a>(label: &'a str, msg: Message) -> button::Button<'a, Message> {
+fn action_button(label: &str, msg: Message) -> button::Button<'_, Message, text::Text<'_>> {
     button(text(label).size(12).align_x(Alignment::Center))
         .on_press(msg)
         .padding([4, 10])

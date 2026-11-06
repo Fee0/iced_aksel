@@ -265,6 +265,8 @@ impl<'a, D: Float, Renderer: crate::Renderer> IntoArea<'a, D, Renderer> for &Lab
             align_y: self.vertical_alignment,
             shaping: iced_core::text::Shaping::Basic,
             wrapping: self.wrapping,
+            ellipsis: iced_core::text::Ellipsis::None,
+            hint_factor: None,
         });
 
         // 2. Explicitly type the offsets as f32

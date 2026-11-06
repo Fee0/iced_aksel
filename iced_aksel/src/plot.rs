@@ -41,7 +41,7 @@ use iced_core::{Font, Rectangle};
 ///         for point in &self.points {
 ///             plot.render(
 ///                 Ellipse::new(*point, Radii::new(Measure::Screen(20.0), Measure::Screen(10.0)))
-///                     .fill(theme.palette().primary)
+///                     .fill(theme.seed().primary)
 ///             );
 ///         }
 ///     }
@@ -93,7 +93,7 @@ impl<'a, D: Float, Renderer: crate::Renderer> Context<'a, D, Renderer> {
     /// Returns the default font of the underlying renderer
     #[inline(always)]
     pub fn default_font(&self) -> Font {
-        self.renderer.default_font()
+        self.renderer.font()
     }
 
     /// Returns a mutable reference to the underlying [`RenderCache`].

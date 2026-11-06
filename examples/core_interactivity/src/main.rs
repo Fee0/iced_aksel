@@ -1,4 +1,5 @@
 //! iced_aksel Drawing Library Example (Hit-Test Debugger Gallery)
+use iced::Widget as _;
 use iced::{
     Element, Length, Point, Theme,
     mouse::{self},
@@ -140,7 +141,7 @@ impl DrawingApp {
         ]
         .spacing(20)
         .padding(20)
-        .into()
+        .boxed()
     }
 }
 
@@ -167,7 +168,7 @@ struct DrawingData {
 
 impl PlotData<f64, Message> for DrawingData {
     fn draw(&self, plot: &mut Plot<f64, Message>, theme: &Theme) {
-        let palette = theme.palette();
+        let palette = theme.seed();
 
         for item in &self.shapes {
             // Determine Color based on interaction state

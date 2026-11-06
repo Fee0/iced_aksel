@@ -51,10 +51,20 @@ iced = { version = "0.14" }
 iced_aksel = { version = "0.3" }
 ```
 
+The `iced-master` branch tracks iced's development branch (the coming 0.15) and
+is not published to crates.io. To use it, depend on both through git and pin
+the same iced revision this branch uses (see the workspace `Cargo.toml`):
+
+```toml
+[dependencies]
+iced = { git = "https://github.com/iced-rs/iced", rev = "8ff48c42b0d5188223501ea1ccc506fd5beaf36a" }
+iced_aksel = { git = "https://github.com/QuistHQ/iced_aksel", branch = "iced-master" }
+```
+
 ## 🌟 Quick Start
 
 ```rust
-use iced::{Element, Theme};
+use iced::{Theme, Widget};
 use iced_aksel::shape::Ellipse;
 use iced_aksel::{Axis, Chart, Measure, Plot, PlotData, PlotPoint, State, axis, scale::Linear, Radii};
 
@@ -88,10 +98,8 @@ impl App {
         }
     }
 
-    fn view(&self) -> Element<Message> {
-        Chart::new(&self.state)
-            .plot_data(&self.scatter, X_ID, Y_ID)
-            .into()
+    fn view(&self) -> impl Widget<Message> + '_ {
+        Chart::new(&self.state).plot_data(&self.scatter, X_ID, Y_ID)
     }
 }
 
@@ -117,7 +125,7 @@ impl PlotData<f64, Message> for Scatter {
         for point in &self.points {
             plot.render(
                 Ellipse::new(*point, Radii::uniform(Measure::Screen(5.0)))
-                    .fill(theme.palette().primary),
+                    .fill(theme.seed().primary),
             );
         }
     }

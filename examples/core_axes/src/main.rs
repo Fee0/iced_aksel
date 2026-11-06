@@ -6,6 +6,7 @@
 //! 1. **Simple:** Inheriting default styles and selectively overriding properties.
 //! 2. **Advanced:** Constructing visual elements from scratch for granular control.
 
+use iced::Widget as _;
 use iced::widget::checkbox;
 use iced::widget::text::LineHeight;
 use iced::{
@@ -91,7 +92,8 @@ impl AxesShowcase {
         let controls = row![
             row![
                 text("Theme:"),
-                pick_list(Theme::ALL, Some(&self.theme), Message::ThemeChanged)
+                pick_list(Some(&self.theme), Theme::ALL, Theme::to_string)
+                    .on_select(Message::ThemeChanged)
             ]
             .spacing(10)
             .align_y(iced::Alignment::Center),
@@ -118,7 +120,7 @@ impl AxesShowcase {
         .spacing(20)
         .padding(20);
 
-        content.into()
+        content.boxed()
     }
 
     fn theme(&self) -> Theme {
@@ -171,8 +173,8 @@ fn advanced_tick_result() -> impl Fn(TickContext<f64>) -> TickResult + 'static {
 
         // Gradient logic
         let lerp_color = color_lerped(
-            &ctx.theme.palette().danger,
-            &ctx.theme.palette().warning,
+            &ctx.theme.seed().danger,
+            &ctx.theme.seed().warning,
             ctx.normalized_position,
         );
 
@@ -184,13 +186,13 @@ fn advanced_tick_result() -> impl Fn(TickContext<f64>) -> TickResult + 'static {
         };
 
         let grid_line = GridLine {
-            color: ctx.theme.extended_palette().background.neutral.color,
+            color: ctx.theme.palette().background.neutral.color,
             width: 1.into(),
             dashed: Some(DashStyle::new(6., 2.)),
         };
 
         let label_badge = LabelBadge {
-            background: ctx.theme.extended_palette().background.neutral.color,
+            background: ctx.theme.palette().background.neutral.color,
             border: Border::default().rounded(4.),
             shadow: Shadow::default(),
         };
@@ -232,7 +234,7 @@ fn panel<'a>(title: &'a str, chart: Chart<'a, &'static str, f64, Message>) -> El
             .width(Length::Fill)
             .height(Length::Fill)
             .style(|t: &Theme| container::Style::default()
-                .background(t.extended_palette().background.weak.color)
+                .background(t.palette().background.weak.color)
                 .border(Border {
                     radius: 8.0.into(),
                     color: Color::from_rgba(1.0, 1.0, 1.0, 0.05),
@@ -242,7 +244,7 @@ fn panel<'a>(title: &'a str, chart: Chart<'a, &'static str, f64, Message>) -> El
     ]
     .spacing(10)
     .width(Length::Fill)
-    .into()
+    .boxed()
 }
 
 fn simple_dynamic_marker(ctx: MarkerContext<f64>) -> Option<Marker> {
@@ -253,9 +255,9 @@ fn simple_dynamic_marker(ctx: MarkerContext<f64>) -> Option<Marker> {
 
     // Example: Change color based on data thresholds
     let badge_color = if ctx.value <= 50.0 {
-        ctx.theme.palette().warning
+        ctx.theme.seed().warning
     } else {
-        ctx.theme.palette().danger
+        ctx.theme.seed().danger
     };
 
     // --- THE EASY WAY ---
@@ -284,8 +286,8 @@ fn advanced_dynamic_marker(ctx: MarkerContext<f64>) -> Option<Marker> {
     }
 
     let lerp_color = color_lerped(
-        &ctx.theme.palette().danger,
-        &ctx.theme.palette().warning,
+        &ctx.theme.seed().danger,
+        &ctx.theme.seed().warning,
         ctx.normalized_position,
     );
 
@@ -293,7 +295,7 @@ fn advanced_dynamic_marker(ctx: MarkerContext<f64>) -> Option<Marker> {
     let label_text = format!("{:.2}", ctx.value);
     let label_style = LabelStyle {
         size: 12.into(),
-        color: ctx.theme.palette().text,
+        color: ctx.theme.seed().text,
         padding: 4.into(),
         line_height: LineHeight::Relative(1.0),
     };

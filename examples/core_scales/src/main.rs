@@ -3,6 +3,7 @@
 //! Showcases linear and logarithmic scales (With mulitple scales on the Y-axis)
 //!
 
+use iced::Widget as _;
 use iced::{
     Color, Length, Theme,
     alignment::Horizontal,
@@ -94,13 +95,13 @@ impl ScalesExample {
                 linear_representation: StyleableData {
                     line: points.clone(),
                     markers: markers.clone(),
-                    color: |t| t.palette().primary,
+                    color: |t| t.seed().primary,
                 },
                 // Assign Red to Log Axis representation
                 log_representation: StyleableData {
                     line: points,
                     markers,
-                    color: |t| t.palette().danger,
+                    color: |t| t.seed().danger,
                 },
             },
             iced::Task::none(),
@@ -134,13 +135,13 @@ impl ScalesExample {
             .width(Length::Fill)
             .padding(20)
             .style(|t: &Theme| {
-                container::Style::default().border(iced::border::color(t.palette().text).width(1.0))
+                container::Style::default().border(iced::border::color(t.seed().text).width(1.0))
             });
 
         column![header, chart_container, self.view_legend()]
             .spacing(20)
             .padding(20)
-            .into()
+            .boxed()
     }
 
     fn view_legend(&self) -> iced::Element<'_, Message> {
@@ -151,7 +152,7 @@ impl ScalesExample {
         )
         .width(Length::Fill)
         .align_x(Horizontal::Center)
-        .into()
+        .boxed()
     }
 }
 
@@ -235,8 +236,8 @@ fn linear_axis_tick_renderer(ctx: TickContext<f64, Theme>) -> TickResult {
     let mut tick_line = ctx.tickline();
 
     // Overwrite colors (Primary Blue)
-    tick_line.color = ctx.theme.palette().primary;
-    label.color = ctx.theme.palette().primary;
+    tick_line.color = ctx.theme.seed().primary;
+    label.color = ctx.theme.seed().primary;
 
     TickResult {
         label: Some(label),
@@ -254,12 +255,12 @@ fn log_axis_tick_renderer(ctx: TickContext<f64, Theme>) -> TickResult {
 
     // 2. Prepare the line (We need this for both Level 0 and Level 1)
     let mut tick_line = ctx.tickline();
-    tick_line.color = ctx.theme.palette().danger;
+    tick_line.color = ctx.theme.seed().danger;
 
     // 3. Prepare the label (ONLY for Level 0)
     let label = if ctx.tick.level == 0 {
         let mut label = ctx.label(format!("{:.0}", ctx.tick.value));
-        label.color = ctx.theme.palette().danger;
+        label.color = ctx.theme.seed().danger;
         Some(label)
     } else {
         // Optional: You can make minor tick lines shorter or thinner here if you want

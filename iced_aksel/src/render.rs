@@ -64,9 +64,9 @@ pub enum Backend {
 }
 
 /// Renderer requirements for plotting.
-pub trait Renderer<Font = iced_core::Font>:
+pub trait Renderer:
     iced_core::Renderer
-    + iced_core::text::Renderer<Font = Font>
+    + iced_core::text::Renderer
     + iced_graphics::geometry::Renderer
     + iced_graphics::mesh::Renderer
 {
@@ -74,10 +74,10 @@ pub trait Renderer<Font = iced_core::Font>:
     fn preferred_backend(&self) -> Backend;
 }
 
-impl<A, B> Renderer<A::Font> for iced_renderer::fallback::Renderer<A, B>
+impl<A, B> Renderer for iced_renderer::fallback::Renderer<A, B>
 where
     A: Renderer,
-    B: Renderer<A::Font, Paragraph = A::Paragraph, Editor = A::Editor>,
+    B: Renderer<Paragraph = A::Paragraph, Editor = A::Editor>,
 {
     fn preferred_backend(&self) -> Backend {
         match self {

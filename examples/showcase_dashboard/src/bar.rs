@@ -265,7 +265,7 @@ impl BarChart {
 
 impl PlotData<f64, crate::Message> for BarChart {
     fn draw(&self, plot: &mut Plot<f64, crate::Message>, theme: &Theme) {
-        let palette = theme.palette();
+        let palette = theme.seed();
         let bar_color = palette.primary;
 
         for (i, item) in self.data.iter().enumerate() {

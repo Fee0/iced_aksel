@@ -245,10 +245,9 @@ pub fn draw_geometric_text(ctx: &mut TextRenderContext, req: Text) {
         Metrics::new(req.size.into(), req.line_height.into()),
     );
 
-    text_buffer.set_size(font_system, Some(req.bounds.width), Some(req.bounds.height));
-    text_buffer.set_wrap(font_system, iced_graphics::text::to_wrap(req.wrapping));
+    text_buffer.set_size(Some(req.bounds.width), Some(req.bounds.height));
+    text_buffer.set_wrap(iced_graphics::text::to_wrap(req.wrapping));
     text_buffer.set_text(
-        font_system,
         &req.content,
         &iced_graphics::text::to_attributes(req.font),
         iced_graphics::text::to_shaping(iced_core::text::Shaping::Auto, &req.content),
@@ -257,7 +256,7 @@ pub fn draw_geometric_text(ctx: &mut TextRenderContext, req: Text) {
 
     // --- Get layout runs ---
     let runs: Vec<OwnedRun> = {
-        let bw = text_buffer.borrow_with(font_system);
+        let mut bw = text_buffer.borrow_with(font_system);
         bw.layout_runs()
             .map(|run| OwnedRun {
                 line_y: run.line_y,

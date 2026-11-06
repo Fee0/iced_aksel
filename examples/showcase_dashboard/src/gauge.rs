@@ -40,7 +40,7 @@ impl Zone {
         }
     }
 
-    pub const fn resolve_color(&self, palette: &iced::theme::Palette) -> Color {
+    pub const fn resolve_color(&self, palette: &iced::theme::palette::Seed) -> Color {
         match self {
             Self::Primary(_) => palette.primary,
             Self::Success(_) => palette.success,
@@ -414,7 +414,7 @@ impl PlotData<f64, crate::Message> for Gauge {
             );
         }
 
-        let palette = theme.palette();
+        let palette = theme.seed();
 
         // 1. Resolve Active Color (For the main bar)
         let active_color = if self.zones.is_empty() {

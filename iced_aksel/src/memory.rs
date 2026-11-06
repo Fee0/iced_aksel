@@ -2,7 +2,7 @@ use std::cell::{RefCell, RefMut};
 use std::hash::Hash;
 
 use aksel::Float;
-use iced_core::{Layout, Point, Rectangle};
+use iced_core::{Point, Rectangle};
 use iced_core::{keyboard, mouse};
 
 use crate::interaction::{self, InteractionsCache};
@@ -45,13 +45,13 @@ impl CacheSignature {
         Theme,
     >(
         state: &State<AxisId, Domain, Theme>,
-        layout: &Layout<'_>,
+        layout_bounds: Rectangle,
         layers: &[Layer<'_, AxisId, Domain, Message, Tag, Renderer, Theme>],
     ) -> Self {
         let mut force_redraw = false;
         Self {
             state_version: state.version(),
-            layout_bounds: layout.bounds(),
+            layout_bounds,
             layers: layers
                 .iter()
                 .map(|l| {

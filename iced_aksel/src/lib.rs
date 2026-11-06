@@ -3,9 +3,9 @@
 use aksel::ScreenRect;
 use derive_more::{Display, Error};
 use iced_core::{
-    Clipboard, Color, Element, Event, Font, Layout, Length, Padding, Pixels, Point, Rectangle,
-    Shell, Size, Widget, keyboard,
-    layout::{self, Limits, Node},
+    Color, Event, Font, Layout, Length, Padding, Pixels, Point, Rectangle, Shell, Size, Vector,
+    Widget, keyboard,
+    layout::Limits,
     mouse,
     renderer::{Quad, Style},
     widget::{Tree, tree},
@@ -431,7 +431,7 @@ where
     fn handle_mouse_press(
         &self,
         memory: &mut Memory<AxisId, Message, Tag, Renderer>,
-        layout: Layout,
+        layout: ChartLayout<'_>,
         shell: &mut Shell<'_, Message>,
         click: mouse::Click,
         button: mouse::Button,
@@ -441,7 +441,7 @@ where
             return;
         }
 
-        let plot_bounds = self.get_plot_layout(layout).bounds();
+        let plot_bounds = layout.plot().bounds();
         let mouse_pos = click.position();
 
         // Check if press is on the plot area
@@ -517,7 +517,7 @@ where
 
         // Check if press is on any axis
         for (i, (id, axis)) in self.state.axes().iter().enumerate() {
-            let axis_bounds = layout.children().nth(i).unwrap().bounds();
+            let axis_bounds = layout.axis(i).bounds();
 
             if !axis_bounds.contains(mouse_pos) {
                 continue;
@@ -564,7 +564,7 @@ where
     fn handle_mouse_release(
         &self,
         memory: &mut Memory<AxisId, Message, Tag, Renderer>,
-        layout: Layout,
+        layout: ChartLayout<'_>,
         shell: &mut Shell<'_, Message>,
         previous_click_kind: Option<mouse::click::Kind>,
         button: mouse::Button,
@@ -583,7 +583,7 @@ where
                 interaction_id,
                 ..
             } => {
-                let plot_bounds = self.get_plot_layout(layout).bounds();
+                let plot_bounds = layout.plot().bounds();
                 let interactions = memory.interaction_cache.borrow();
 
                 let normalized = Point::new(
@@ -643,7 +643,7 @@ where
             }
             Action::DraggingAxis { id, origin, .. } => {
                 if let Some((i, id, axis)) = self.state.axes().get_full(id) {
-                    let axis_bounds = layout.children().nth(i).unwrap().bounds();
+                    let axis_bounds = layout.axis(i).bounds();
                     let normalized = axis.screen_to_normalized(*origin, &axis_bounds);
                     if let Some(handler) = &self.on_axis_release
                         && let Some(message) = handler.run((
@@ -671,12 +671,12 @@ where
     fn handle_mouse_moved(
         &self,
         memory: &mut Memory<AxisId, Message, Tag, Renderer>,
-        layout: Layout,
+        layout: ChartLayout<'_>,
         shell: &mut Shell<'_, Message>,
         mouse_pos: Point,
     ) -> Option<HoverIdentity<AxisId, Tag>> {
         let Memory { action, .. } = memory;
-        let plot_bounds = self.get_plot_layout(layout).bounds();
+        let plot_bounds = layout.plot().bounds();
 
         // Mouse is over the plot area
         if plot_bounds.contains(mouse_pos) {
@@ -800,7 +800,7 @@ where
         {
             shell.capture_event();
             if let Some((i, id, axis)) = self.state.axes().get_full(dragging_id) {
-                let axis_bounds = layout.children().nth(i).unwrap().bounds();
+                let axis_bounds = layout.axis(i).bounds();
                 let screen_value = match axis.orientation() {
                     axis::Orientation::Horizontal => mouse_pos.x,
                     axis::Orientation::Vertical => mouse_pos.y,
@@ -829,7 +829,7 @@ where
         // Handle axis hover
         else if matches!(action, Action::Idle) {
             for (i, (id, axis)) in self.state.axes().iter().enumerate() {
-                let axis_bounds = layout.children().nth(i).unwrap().bounds();
+                let axis_bounds = layout.axis(i).bounds();
 
                 if !axis_bounds.contains(mouse_pos) {
                     memory.last_hovered_identity = HoverIdentity::Axis(id.clone());
@@ -857,16 +857,10 @@ where
         None
     }
 
-    #[inline(always)]
-    fn get_plot_layout<'b>(&self, layout: Layout<'b>) -> Layout<'b> {
-        // The plot area is always the last child in the layout list
-        layout.children().last().unwrap()
-    }
-
     /// Iterates over axes to find the inner-most spines and draws connecting squares at the corners.
     fn draw_spine_corners(
         &self,
-        layout: Layout<'_>,
+        layout: ChartLayout<'_>,
         style: &style::Style,
         plot: Rectangle,
         renderer: &mut Renderer,
@@ -894,7 +888,7 @@ where
             }
 
             let style = axis.create_style(style).spine;
-            let bounds = layout.children().nth(i).unwrap().bounds();
+            let bounds = layout.axis(i).bounds();
             let data = (style.width.0, style.color);
 
             match axis.position() {
@@ -995,7 +989,7 @@ where
     AxisId: Hash + Eq + Debug + Clone + 'static,
     Domain: Float + 'static,
     Tag: Hash + Eq + Clone + Debug + 'static,
-    Renderer: crate::Renderer + iced_core::text::Renderer<Font = iced_core::Font> + 'static,
+    Renderer: crate::Renderer + 'static,
     Theme: Catalog,
     Message: Clone + 'static,
 {
@@ -1007,20 +1001,17 @@ where
         tree::State::new(Memory::<AxisId, Message, Tag, Renderer>::new())
     }
 
-    fn children(&self) -> Vec<Tree> {
-        // One child per Axis + one for the content (plot area).
-        let mut children: Vec<Tree> = self.state.axes().iter().map(|_| Tree::empty()).collect();
-        children.push(Tree::empty()); // content
-        children
+    fn diff(&mut self, tree: &mut Tree) {
+        // One synthetic child per axis + one for the content (plot area).
+        tree.children
+            .resize_with(self.state.axes().len() + 1, Tree::empty);
     }
-
-    fn diff(&self, _tree: &mut Tree) {}
 
     fn size(&self) -> Size<Length> {
         Size::new(self.width, self.height)
     }
 
-    fn layout(&mut self, tree: &mut Tree, renderer: &Renderer, limits: &Limits) -> Node {
+    fn layout(&mut self, tree: &mut Tree, renderer: &Renderer, limits: &Limits) {
         let memory: &mut Memory<AxisId, Message, Tag, Renderer> = tree.state.downcast_mut();
         memory.make_sure_cache_is_initialized(renderer, self.quality);
 
@@ -1051,17 +1042,17 @@ where
         let chart_origin = Point::new(left_total, top_total);
         let chart_size = Size::new(chart_width, chart_height);
 
-        // Pass 3: Generate layout nodes for everything
-        let mut children_nodes = Vec::with_capacity(axis_count + 1);
+        // Pass 3: Lay out every part into its synthetic child tree
+        tree.children.resize_with(axis_count + 1, Tree::empty);
 
         let mut top_y = self.padding.top;
         let mut bot_y = top_total + chart_height;
         let mut left_x = self.padding.left;
         let mut right_x = left_total + chart_width;
 
-        for (_, axis) in self.state.axes() {
+        for ((_, axis), child) in self.state.axes().iter().zip(&mut tree.children) {
             let thickness = axis.thickness().0;
-            let node = match axis.position() {
+            let (size, position) = match axis.position() {
                 Position::Top => {
                     let n = layout_horizontal_axis(chart_width, axis, left_total, top_y, thickness);
                     top_y += thickness;
@@ -1083,27 +1074,30 @@ where
                     n
                 }
             };
-            children_nodes.push(node);
+            child.size = size;
+            child.translation = Vector::new(position.x, position.y);
         }
 
-        // Add the chart content node (center plot)
-        let chart_node = Node::new(chart_size).move_to(chart_origin);
-        children_nodes.push(chart_node);
+        // The chart content (center plot) is the last child
+        let content = &mut tree.children[axis_count];
+        content.size = chart_size;
+        content.translation = Vector::new(chart_origin.x, chart_origin.y);
 
-        Node::with_children(bounds, children_nodes)
+        tree.size = bounds;
     }
 
     fn update(
         &mut self,
         tree: &mut Tree,
         event: &Event,
-        layout: layout::Layout<'_>,
+        layout: Layout,
         cursor: mouse::Cursor,
         _renderer: &Renderer,
-        _clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
+        let layout = ChartLayout::new(layout, &tree.children);
+
         if !self.errors.is_empty()
             && let Some(handler) = &self.on_error
         {
@@ -1115,10 +1109,10 @@ where
             return;
         }
 
-        let signature = CacheSignature::new(self.state, &layout, &self.layers);
+        let signature = CacheSignature::new(self.state, layout.bounds(), &self.layers);
         let memory: &mut Memory<AxisId, Message, Tag, Renderer> = tree.state.downcast_mut();
         memory.update(signature);
-        memory.update_partitions(self.get_plot_layout(layout).bounds());
+        memory.update_partitions(layout.plot().bounds());
 
         // Only handle events if the cursor is near the chart
         let bounds = layout.bounds();
@@ -1198,7 +1192,7 @@ where
             }
             Event::Mouse(mouse::Event::WheelScrolled { delta }) => {
                 if let Some(cursor_pos) = cursor.position() {
-                    let plot_bounds = self.get_plot_layout(layout).bounds();
+                    let plot_bounds = layout.plot().bounds();
 
                     // Check if scrolling over the plot area
                     if cursor.position_over(plot_bounds).is_some() {
@@ -1221,7 +1215,7 @@ where
                     } else {
                         // Check if scrolling over an axis
                         for (i, (id, axis)) in self.state.axes().iter().enumerate() {
-                            let axis_bounds = layout.children().nth(i).unwrap().bounds();
+                            let axis_bounds = layout.axis(i).bounds();
 
                             if cursor.position_over(axis_bounds).is_some() {
                                 if let Some(handler) = &self.on_axis_scroll {
@@ -1267,13 +1261,14 @@ where
         renderer: &mut Renderer,
         theme: &Theme,
         _style: &Style,
-        layout: Layout<'_>,
+        layout: Layout,
         cursor: mouse::Cursor,
         _viewport: &Rectangle,
     ) {
+        let layout = ChartLayout::new(layout, &tree.children);
         let style = theme.style(&self.class);
         let bounds = layout.bounds();
-        let plot_bounds = self.get_plot_layout(layout).bounds();
+        let plot_bounds = layout.plot().bounds();
         let screen_rect = ScreenRect {
             x: plot_bounds.x,
             y: plot_bounds.y,
@@ -1294,7 +1289,7 @@ where
         // Draw axes
         for (i, (_, axis)) in self.state.axes().iter().enumerate() {
             // We only care about layout bounds here to determine position
-            let axis_layout = layout.children().nth(i).unwrap();
+            let axis_layout = layout.axis(i);
 
             // Draw the axis itself (Ticks, labels, spine and gridlines)
             axis.draw::<Renderer>(
@@ -1359,7 +1354,7 @@ where
                 continue;
             };
 
-            let axis_bounds = layout.child(idx).bounds();
+            let axis_bounds = layout.axis(idx).bounds();
 
             let Some((marker, normalized_position)) = marker_request.create_marker(
                 axis,
@@ -1417,11 +1412,12 @@ where
     fn mouse_interaction(
         &self,
         tree: &Tree,
-        layout: Layout<'_>,
+        layout: Layout,
         cursor: mouse::Cursor,
         _viewport: &Rectangle,
         _renderer: &Renderer,
     ) -> mouse::Interaction {
+        let layout = ChartLayout::new(layout, &tree.children);
         let memory: &Memory<AxisId, Message, Tag, Renderer> = tree.state.downcast_ref();
         let interactions = memory.interaction_cache.borrow();
 
@@ -1488,52 +1484,83 @@ where
     }
 }
 
-// Boilerplate conversions and helpers
-
-impl<'a, AxisId, Domain, Message, Tag, Theme, Renderer>
-    From<Chart<'a, AxisId, Domain, Message, Tag, Theme, Renderer>>
-    for Element<'a, Message, Theme, Renderer>
+impl<AxisId, Domain, Message, Tag, Theme, Renderer> iced_core::widget::Meta
+    for Chart<'_, AxisId, Domain, Message, Tag, Theme, Renderer>
 where
-    AxisId: Hash + Eq + Debug + Clone + 'static,
-    Domain: Float + 'static,
-    Message: Clone + 'a + 'static,
-    Theme: Catalog + 'a,
-    Renderer: crate::Renderer + iced_core::text::Renderer<Font = iced_core::Font> + 'static,
-    Tag: Hash + Eq + Clone + Debug + 'static,
+    AxisId: Hash + Eq + Debug + Clone,
+    Domain: Float,
+    Tag: Hash + Eq + Clone,
+    Theme: Catalog,
+    Renderer: crate::Renderer,
+    Message: Clone,
 {
-    fn from(plot: Chart<'a, AxisId, Domain, Message, Tag, Theme, Renderer>) -> Self {
-        Element::new(plot)
+}
+
+/// The [`Layout`] of a [`Chart`] together with the synthetic child trees that hold
+/// the bounds of its parts: one per axis, in axis order, followed by the plot area.
+#[derive(Clone, Copy)]
+struct ChartLayout<'a> {
+    layout: Layout,
+    children: &'a [Tree],
+}
+
+impl<'a> ChartLayout<'a> {
+    const fn new(layout: Layout, children: &'a [Tree]) -> Self {
+        Self { layout, children }
+    }
+
+    /// The bounds of the whole chart.
+    fn bounds(self) -> Rectangle {
+        self.layout.bounds()
+    }
+
+    /// The layout of the axis at `index`.
+    fn axis(self, index: usize) -> Layout {
+        self.layout
+            .iter(self.children)
+            .nth(index)
+            .map(|(layout, _)| layout)
+            .expect("Chart has a layout child per axis")
+    }
+
+    /// The layout of the plot area, which is always the last child.
+    fn plot(self) -> Layout {
+        self.layout
+            .iter(self.children)
+            .next_back()
+            .map(|(layout, _)| layout)
+            .expect("Chart has a layout child for the plot area")
     }
 }
 
 #[inline(always)]
-fn layout_horizontal_axis<Domain: Float, Theme>(
+const fn layout_horizontal_axis<Domain: Float, Theme>(
     chart_width: f32,
     axis: &Axis<Domain, Theme>,
     x: f32,
     y: f32,
     height: f32,
-) -> Node {
+) -> (Size, Point) {
     let limits = Limits::new(
         Size::new(chart_width, height),
         Size::new(chart_width, height),
     );
-    axis.layout(&limits).move_to(Point::new(x, y))
+    (axis.layout(&limits), Point::new(x, y))
 }
 
 #[inline(always)]
-fn layout_vertical_axis<Domain: Float, Theme>(
+const fn layout_vertical_axis<Domain: Float, Theme>(
     chart_height: f32,
     axis: &Axis<Domain, Theme>,
     x: f32,
     y: f32,
     width: f32,
-) -> Node {
+) -> (Size, Point) {
     let limits = Limits::new(
         Size::new(width, chart_height),
         Size::new(width, chart_height),
     );
-    axis.layout(&limits).move_to(Point::new(x, y))
+    (axis.layout(&limits), Point::new(x, y))
 }
 
 #[inline(always)]

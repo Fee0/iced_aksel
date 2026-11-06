@@ -14,9 +14,9 @@ use derivative::Derivative;
 use iced_core::{
     Layout, Pixels, Point, Rectangle, Size, Text,
     alignment::Vertical,
-    layout::{Limits, Node},
+    layout::Limits,
     renderer::Quad,
-    text::{Wrapping, paragraph::Plain},
+    text::{Ellipsis, Wrapping, paragraph::Plain},
     widget::text::Alignment,
 };
 
@@ -286,14 +286,14 @@ impl<D: Float, Theme> Axis<D, Theme> {
         }
     }
 
-    /// Calculates the layout node for this axis.
-    pub(crate) fn layout(&self, limits: &Limits) -> Node {
-        let min = limits.min();
-        let max = limits.max();
+    /// Calculates the size of this axis.
+    pub(crate) const fn layout(&self, limits: &Limits) -> Size {
+        let min = limits.min;
+        let max = limits.max;
 
         let thickness = self.thickness().0;
 
-        let size = match self.position {
+        match self.position {
             Position::Top | Position::Bottom => {
                 let height = thickness.clamp(min.height, max.height).max(0.0);
                 Size::new(max.width, height)
@@ -302,9 +302,7 @@ impl<D: Float, Theme> Axis<D, Theme> {
                 let width = thickness.clamp(min.width, max.width).max(0.0);
                 Size::new(width, max.height)
             }
-        };
-
-        Node::new(size)
+        }
     }
 
     // TODO: Slight refactor to make it more readable
@@ -316,12 +314,12 @@ impl<D: Float, Theme> Axis<D, Theme> {
         renderer: &mut Renderer,
         theme: &Theme,
         style: &Style,
-        layout: Layout<'_>,
+        layout: Layout,
         plot_bounds: &Rectangle,
         cache: &mut RenderCache<Renderer>,
         viewport: &Rectangle,
     ) where
-        Renderer: crate::Renderer + iced_core::text::Renderer<Font = iced_core::Font>,
+        Renderer: crate::Renderer,
     {
         if self.invisible && !self.render_grid {
             return;
@@ -398,11 +396,13 @@ impl<D: Float, Theme> Axis<D, Theme> {
                     bounds: bounds.size(),
                     size: label.size,
                     line_height: label.line_height,
-                    font: label.font.unwrap_or_else(|| renderer.default_font()),
+                    font: label.font.unwrap_or_else(|| renderer.font()),
                     align_x: Alignment::Left,
                     align_y: Vertical::Top,
                     shaping: iced_core::text::Shaping::Auto,
                     wrapping: Wrapping::None,
+                    ellipsis: Ellipsis::None,
+                    hint_factor: renderer.hint_factor(),
                 });
 
                 let width = paragraph.min_bounds().width + label.padding.left + label.padding.right;
@@ -527,7 +527,7 @@ impl<D: Float, Theme> Axis<D, Theme> {
         chart_bounds: &Rectangle,
         text_offset: Pixels,
     ) where
-        Renderer: crate::Renderer + iced_core::text::Renderer<Font = iced_core::Font>,
+        Renderer: crate::Renderer,
     {
         let orientation = self.orientation();
 
@@ -541,11 +541,13 @@ impl<D: Float, Theme> Axis<D, Theme> {
             bounds: bounds.size(),
             size: marker.label.size,
             line_height: marker.label.line_height,
-            font: marker.label.font.unwrap_or_else(|| renderer.default_font()),
+            font: marker.label.font.unwrap_or_else(|| renderer.font()),
             align_x: Alignment::Left,
             align_y: Vertical::Top,
             shaping: iced_core::text::Shaping::Auto,
             wrapping: Wrapping::None,
+            ellipsis: Ellipsis::None,
+            hint_factor: renderer.hint_factor(),
         });
 
         let rail_pos = self.calculate_rail_position(&bounds, orientation, text_offset.0);
@@ -706,7 +708,7 @@ impl<D: Float, Theme> Axis<D, Theme> {
         candidate_max_size: Size,
         viewport: &Rectangle,
     ) where
-        Renderer: crate::Renderer + iced_core::text::Renderer<Font = iced_core::Font>,
+        Renderer: crate::Renderer,
     {
         let mut accepted: Vec<PlacedLabelInfo<D>> = Vec::new();
 
@@ -785,7 +787,7 @@ impl<D: Float, Theme> Axis<D, Theme> {
         offset: f32,
     ) -> Option<ResolvedLabelCandidate<Renderer, D>>
     where
-        Renderer: iced_core::text::Renderer<Font = iced_core::Font>,
+        Renderer: iced_core::text::Renderer,
     {
         let label = candidate.label;
         if label.content.is_empty() {
@@ -801,11 +803,13 @@ impl<D: Float, Theme> Axis<D, Theme> {
             bounds: bounds.size(),
             size: label.size,
             line_height: label.line_height,
-            font: label.font.unwrap_or_else(|| renderer.default_font()),
+            font: label.font.unwrap_or_else(|| renderer.font()),
             align_x: Alignment::Left,
             align_y: Vertical::Top,
             shaping: iced_core::text::Shaping::Auto,
             wrapping: Wrapping::None,
+            ellipsis: Ellipsis::None,
+            hint_factor: renderer.hint_factor(),
         });
 
         let rail_pos = self.calculate_rail_position(bounds, orientation, offset);

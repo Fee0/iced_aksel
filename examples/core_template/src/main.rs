@@ -1,6 +1,6 @@
 //! Minimal iced_aksel plot example.
 use iced::{
-    Element, Length, Theme,
+    Length, Theme, Widget,
     widget::{column, container},
 };
 use iced_aksel::{
@@ -61,13 +61,12 @@ impl TemplateApp {
         match message {}
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> impl Widget<Message> + '_ {
         let chart = Chart::new(&self.chart_state).plot_data(&self.data, Self::X, Self::Y);
 
         column![container(chart)]
             .width(Length::Fill)
             .height(Length::Fill)
-            .into()
     }
 }
 

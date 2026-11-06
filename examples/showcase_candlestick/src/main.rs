@@ -6,6 +6,7 @@
 //! - Toggleable Bollinger Bands (BBands) indicator.
 //! - An interactive settings bar with checkboxes and text inputs.
 
+use iced::Widget as _;
 use iced::{
     Element, Subscription, Task, Theme,
     time::Instant,
@@ -207,15 +208,18 @@ impl ExampleApp {
         let settings_bar = self.build_settings_ui();
 
         // Display the settings bar and then the chart.
-        column![settings_bar, chart].spacing(10).padding(20).into()
+        column![settings_bar, chart].spacing(10).padding(20).boxed()
     }
 
     /// Helper method to build the settings UI.
     fn build_settings_ui(&self) -> Element<'_, Message> {
         // --- Theme toggle ---
-        let theme_toggle = pick_list(iced::Theme::ALL, Some(&self.current_theme), |t| {
-            Message::SwitchTheme(t)
-        });
+        let theme_toggle = pick_list(
+            Some(&self.current_theme),
+            iced::Theme::ALL,
+            iced::Theme::to_string,
+        )
+        .on_select(Message::SwitchTheme);
 
         // --- Volume Toggle ---
         let volume_toggle = checkbox(self.show_volume)
@@ -273,7 +277,7 @@ impl ExampleApp {
         .spacing(10);
 
         // --- Combine all settings into a column ---
-        column![toggle_row, sma_row, bband_row].spacing(10).into()
+        column![toggle_row, sma_row, bband_row].spacing(10).boxed()
     }
 
     /// Defines the application's theme.

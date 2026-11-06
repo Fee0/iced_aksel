@@ -476,7 +476,8 @@ impl<Renderer: crate::render::Renderer> PathCache<Renderer> {
                 fill,
                 line_height,
                 bounds,
-                .. // Quality and Wrapping can't be supported on the tiny-skia pipeline
+                wrapping,
+                .. // Quality can't be supported on the tiny-skia pipeline
             } => {
                 frame.with_save(|frame| {
                     // 1. Calculate Bounds & Clip Rect
@@ -525,6 +526,8 @@ impl<Renderer: crate::render::Renderer> PathCache<Renderer> {
                             align_y: *vertical_alignment,
                             shaping: Shaping::Advanced,
                             max_width,
+                            wrapping: *wrapping,
+                            ellipsis: iced_core::text::Ellipsis::None,
                         });
                     };
 
